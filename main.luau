@@ -1,9 +1,23 @@
 local Compression = script.Parent.compression
 local Formatting = script.Parent.formatting
 
+local Localization = require(script.localization)
 local c_ASCII85 = require(Compression.Ascii85)
 local c_LZW = require(Compression.LZW)
 local f_BLF = require(Formatting.BLF)
+
+local function GLM(str) --Get Local Message
+	if _MAIN_LANGUAGE_ == "en" then
+		if str ~= "LEFTQUOTE" and str ~= "RIGHTQUOTE" then
+			return str
+		else
+			return '"'
+		end
+	end
+	local t_str = Localization[_MAIN_LANGUAGE_][str]
+	if t_str == nil then return str .. " [LOCALIZATION FAIL]" end
+	return t_str
+end
 
 function ReformString(t)
 	local f = ""
@@ -15,22 +29,29 @@ end
 
 function DebugPrint(msg)
 	if _ENABLE_DEBUG_ then
-		warn(`LOAF DEBUG : {msg}`)
+		warn(`LOAF {GLM("DEBUG")} : {msg}`)
 	end
 end
 
 --SETTINGS
-_ENABLE_DEBUG_ = false --Enables printing and debug features.
+_ENABLE_DEBUG_ = true --Enables printing and debug features.
+_MAIN_LANGUAGE_ = "ja" --The language the module will print in.
+
+script:AddTag(_MAIN_LANGUAGE_)
 
 --INIT
-warn("Initializing libraries.")
+local LQ = GLM("LEFTQUOTE")
+local RQ = GLM("RIGHTQUOTE")
+
+warn(GLM("Initializing libraries."))
 local Libs = script.Parent.libraries:GetChildren()
 for i = 1, #Libs do
-	warn(`Initializing library "{Libs[i].Name}"`)
+	local MAINSTR = GLM("Initializing library")
+	warn(`{MAINSTR} {LQ}{Libs[i].Name}{RQ}`)
 	local l = require(Libs[i])
 	l()
 end
-warn("Finished")
+warn(GLM("Finished"))
 
 local main = {}
 
@@ -39,7 +60,7 @@ main.compression = {}
 main.compression.compress = function(str)
 	str = c_LZW:Compress(str)
 	
-	DebugPrint("Compression finished.")
+	DebugPrint(GLM("Compression finished."))
 	DebugPrint(str)
 	
 	return str
@@ -48,7 +69,7 @@ end
 main.compression.decompress = function(str)
 	str = c_LZW:Decompress(str)
 	
-	DebugPrint("Decompression finished.")
+	DebugPrint(GLM("Compression finished."))
 	DebugPrint(str)
 	
 	return str
@@ -59,7 +80,7 @@ main.formatting = {}
 main.formatting.format = function(str)
 	str = f_BLF:Format(str)
 	
-	DebugPrint("Formatting finished.")
+	DebugPrint(GLM("Formatting finished."))
 	DebugPrint(str)
 	
 	return str
@@ -68,7 +89,7 @@ end
 main.execution = {}
 
 main.execution.new_thread = function()
-	DebugPrint("Creating new thread.")
+	DebugPrint(GLM("Creating new thread."))
 
 	local thread = Instance.new("Folder")
 	thread.Name = "LoafThread"
@@ -113,31 +134,46 @@ local LuauTypeConversions = {
 		return UDim.new(a[1], a[2])
 	end,
 	
-	col3 = function(a)
+	col3_new = function(a)
 		if not a[1] or not a[2] or not a[3] then return "null" end
 		return Color3.new(a[1], a[2], a[3])
+	end,
+	
+	col3_rgb = function(a)
+		if not a[1] or not a[2] or not a[3] then return "null" end
+		return Color3.fromRGB(a[1], a[2], a[3])
+	end,
+	
+	col3_hsv = function(a)
+		if not a[1] or not a[2] or not a[3] then return "null" end
+		return Color3.fromHSV(a[1], a[2], a[3])
+	end,
+	
+	col3_hex = function(a)
+		if not a[1] or not a[2] or not a[3] then return "null" end
+		return Color3.fromHex(a[1], a[2], a[3])
 	end,
 }
 
 main.run = function(str, thread: Folder)
-	DebugPrint("Running thread.")
+	DebugPrint(GLM("Running thread."))
 	
 	--Check if the given string is formatted
 	local FormatCheck = string.split(str, "")
 	if FormatCheck[#FormatCheck] ~= "#" then
-		DebugPrint("Performing decompression format tag check.")
+		DebugPrint(GLM("Performing decompression format tag check."))
 		
 		--If no format tag, check if the string is compiled
 		local Success, FailMessage = pcall(main.compression.decompress, str)
 		if not Success then
-			error("Given string is not formatted, please format and try again.")
+			error(GLM("Given string is not formatted, please format and try again."))
 		end
 		
 		local Decomp = main.compression.decompress(str)
 		local DecompFormatCheck = string.split(Decomp, "")
 		
 		if DecompFormatCheck[#DecompFormatCheck] ~= "#" then
-			error("Given string is not formatted, please format and try again.")
+			error(GLM("Given string is not formatted, please format and try again."))
 		else
 			str = Decomp
 		end
@@ -173,7 +209,7 @@ main.run = function(str, thread: Folder)
 					if var then
 						Words[i] = var.Value
 					else
-						warn(declarable .. " is not a valid variable for declarable.")
+						warn(declarable .. " " .. GLM("is not a valid variable for declarable."))
 						Words[i] = "nil"
 					end
 				end
@@ -213,7 +249,7 @@ main.run = function(str, thread: Folder)
 		
 		local Library = script.Parent.libraries:FindFirstChild(Command)
 		if not Library then
-			warn(Command .. " is not a valid library. Skipping line.")
+			warn(Command .. " " .. GLM("is not a valid library. Skipping line."))
 			continue
 		end
 		
