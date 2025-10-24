@@ -1,3 +1,5 @@
+local Localization = require(script.Parent.Parent.main.localization)
+
 return function (thread, arguments)
 	if not thread then return end
 	
@@ -10,5 +12,9 @@ return function (thread, arguments)
 		end
 	end
 	
-	print("Loaf Runtime " .. math.round(os.clock()) .. " : " .. str)
+	if str == nil or str == "nil" then
+		str = "null"
+	end
+	
+	print(`Loaf {Localization.settings.glm("Runtime")} ` .. math.round(os.clock()) .. " : " .. str)
 end
