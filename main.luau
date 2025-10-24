@@ -35,7 +35,7 @@ end
 
 --SETTINGS
 _ENABLE_DEBUG_ = true --Enables printing and debug features.
-_MAIN_LANGUAGE_ = "ja" --The language the module will print in.
+_MAIN_LANGUAGE_ = "en" --The language the module will print in.
 
 script:AddTag(_MAIN_LANGUAGE_)
 
