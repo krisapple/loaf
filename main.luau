@@ -1,3 +1,5 @@
+_G.LOAF = {}
+
 local Compression = script.Parent.compression
 local Formatting = script.Parent.formatting
 
@@ -34,7 +36,7 @@ function DebugPrint(msg)
 end
 
 --SETTINGS
-_ENABLE_DEBUG_ = true --Enables printing and debug features.
+_ENABLE_DEBUG_ = false --Enables printing and debug features.
 _MAIN_LANGUAGE_ = "en" --The language the module will print in.
 
 script:AddTag(_MAIN_LANGUAGE_)
@@ -54,6 +56,8 @@ end
 warn(GLM("Finished"))
 
 local main = {}
+
+main.body = script
 
 main.compression = {}
 
@@ -88,18 +92,59 @@ end
 
 main.execution = {}
 
-main.execution.new_thread = function()
+_G.LOAF.RUNTIME_ID = {}
+
+function getRuntimeId()
+	local id = 0
+	repeat
+		id += 1
+	until not table.find(_G.LOAF.RUNTIME_ID, id)
+	table.insert(_G.LOAF.RUNTIME_ID, id)
+	return id
+end
+
+main.execution.new_thread = function(threadName : string ?)
 	DebugPrint(GLM("Creating new thread."))
+	
+	local id = nil
+	if not threadName then id = getRuntimeId() end
 
 	local thread = Instance.new("Folder")
-	thread.Name = "LoafThread"
+	thread.Name = threadName or "G_THREAD->" .. tostring(id)
 	thread.Parent = script.Parent.runtime.threads
+	thread:AddTag(tostring(os.date("%c")))
 	
 	local variables = Instance.new("Folder")
 	variables.Name = "Variables"
 	variables.Parent = thread
 	
-	return thread
+	local objects = Instance.new("Folder")
+	objects.Name = "Objects"
+	objects.Parent = thread
+	
+	if not threadName then id = "G_STRING->" .. id end
+	
+	return thread, id or threadName
+end
+
+main.execution.close_thread = function(threadName : string)
+	local thread = script.Parent.runtime.threads:FindFirstChild(threadName)
+	if not thread then
+		warn(threadName .. " is not a valid thread name.")
+	else
+		local S = string.split(threadName, "->")
+		local THREAD_ID = S[2]
+		
+		thread:Destroy()
+		
+		if not THREAD_ID then
+			warn("Thread indentified as a custom thread, cancelling thread ID removal.")
+			return
+		end
+		
+		table.remove(_G.LOAF.RUNTIME_ID, table.find(_G.LOAF.RUNTIME_ID, THREAD_ID))
+		warn("Thread successfully removed.")
+	end
 end
 
 local LuauTypeConversions = {
@@ -158,6 +203,19 @@ local LuauTypeConversions = {
 main.run = function(str, thread: Folder)
 	DebugPrint(GLM("Running thread."))
 	
+	if not thread then
+		error("Given thread is null.")
+	end
+	if thread == "<~NULLTHREAD~>" then
+		error("Given thread is a nullthread.")
+	end
+	if typeof(thread) ~= "Instance" then
+		error("Given thread is a invalid type.")
+	end
+	if not thread:IsA("Folder") then
+		error("Given thread is a invalid instance.")
+	end
+	
 	--Check if the given string is formatted
 	local FormatCheck = string.split(str, "")
 	if FormatCheck[#FormatCheck] ~= "#" then
@@ -210,6 +268,16 @@ main.run = function(str, thread: Folder)
 						Words[i] = var.Value
 					else
 						warn(declarable .. " " .. GLM("is not a valid variable for declarable."))
+						Words[i] = "nil"
+					end
+				end
+				
+				if double == "ob" then
+					local obj = thread.Objects:FindFirstChild(declarable)
+					if obj then
+						Words[i] = obj.Value
+					else
+						warn(declarable .. " " .. GLM("is not a valid object for declarable."))
 						Words[i] = "nil"
 					end
 				end
