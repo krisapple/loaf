@@ -1,169 +1,144 @@
-_G.GLOBAL_LOAF_URIDS = {}
-_G.GLOBAL_LOAF_URIDTOPART = {}
-local ids = _G.GLOBAL_LOAF_URIDS
-local idtopart = _G.GLOBAL_LOAF_URIDTOPART
-
-idtopart["GAME"] = game
-idtopart["ROOT"] = game.Workspace
-idtopart["PLRS"] = game.Players
-idtopart["LIG"] = game.Lighting
-idtopart["MATS"] = game.MaterialService
-idtopart["REPF"] = game.ReplicatedFirst
-idtopart["REPS"] = game.ReplicatedStorage
-idtopart["GUI"] = game.StarterGui
-idtopart["PACK"] = game.StarterPack
-idtopart["PLR"] = game.StarterPlayer
-idtopart["TEAM"] = game.Teams
-idtopart["SOUN"] = game.SoundService
-idtopart["TEXT"] = game.TextChatService
-
---178890848948005830000000000000 combinations
-
-function CHECK_URID(urid)
-	if table.find(ids, urid) then
-		return true
-	else
-		return false
-	end
-end
-
-function GENERATE_URID()
-	local c = false
-	local validchars = string.split("qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$%^&*()_+=", "")
-	
-	local function GenChars()
-		local f = ""
-		for i = 1, 4 do
-			f = f .. validchars[math.random(1, #validchars)]
-		end
-		return f
-	end
-	
-	local urid = ""
-	
-	repeat
-		task.wait()
-		for i = 1, 4 do
-			if i ~= 4 then
-				urid = urid .. GenChars() .. "-"
-			else
-				urid = urid .. GenChars()
-			end
-		end
-		c = CHECK_URID(urid)
-		
-	until c == false
-	
-	table.insert(ids, urid)
-	
-	return urid
-end
-
-function FindEntryByObject(obj)
-	for v, i in pairs(idtopart) do
-		if i == obj then
-			return v
-		end
-	end
-end
-
---setup tagggssssssuuuhhhhhh
-local Everything = workspace:GetDescendants()
-
-for i = 1, #Everything do
-	local URID = GENERATE_URID()
-	idtopart[URID] = Everything[i]
-end
-
-print(idtopart)
-
-return function (thread, arguments)
+return function(thread, arguments)
 	if not thread then return end
 	
 	local modes = {
-		addtag = function(a)
-			local part = idtopart[a[1]] :: Instance
-			local tagname = a[2]
-			
-			part:AddTag(tagname)
-
-			return "NONE"
+		--loaf required methods
+		["set"] = function(a)
+			local Part = a[1] :: Part
+			local PropertyName = a[2]
+			local SetValue = a[3]
+			Part[PropertyName] = SetValue
+		end,
+		["get"] = function(a)
+			local Part = a[1] :: Part
+			local PropertyName = a[2]
+			return Part[PropertyName]
 		end,
 		
-		clearallchildren = function(a)
-			local part = idtopart[a[1]] :: Instance
-			local chil = part:GetChildren()
-			
-			for i = 1, #chil do
-				chil[i]:Destroy()
-				if idtopart[chil[i]] then
-					idtopart[chil[i]] = nil
-				end
-			end
-
-			return "NONE"
+		--main roblox methods
+		["addtag"] = function(a)
+			local Part = a[1] :: Part
+			local TagName = a[2] :: string
+			Part:AddTag(TagName)
 		end,
-		
-		clone = function(a)
-			local clone = idtopart[a[1]]:Clone()
-			local URID = GENERATE_URID()
-			idtopart[URID] = clone
-
-			return `{URID}`
+		["clearallchildren"] = function(a)
+			local Part = a[1] :: Part
+			Part:ClearAllChildren()
 		end,
-		
-		destroy = function(a)
-			idtopart[a[1]]:Destroy()
-			return "NONE"
+		["clone"] = function(a)
+			local Part = a[1] :: Part
+			local Part2 = Part:Clone()
+			return Part2
 		end,
-		
-		new = function(a)
-			local Part = Instance.new(a[1])
-			local URID = GENERATE_URID()
-			idtopart[URID] = Part
-			
-			return `{URID}`
+		["destroy"] = function(a)
+			local Part = a[1] :: Part
+			Part:Destroy()
 		end,
-		
-		setprop = function(a)
-			local part = idtopart[a[1]]
-			local propname = a[2]
-			local setto = a[3]
-			
-			if idtopart[setto] then setto = idtopart[setto] end
-			
-			part[tostring(propname)] = setto
-			
-			return "NONE"
+		["findfirstancestor"] = function(a)
+			local Part = a[1] :: Part
+			local AncestorName = a[2] :: Part
+			return Part:FindFirstAncestor(AncestorName)
 		end,
-		
-		getprop = function(a)
-			local part = idtopart[a[1]]
-			local propname = a[2]
-			local propval = part[tostring(propname)]
-			if idtopart[propval] then propval = idtopart[propval] end
-
-			return propval
+		["findfirstancestorofclass"] = function(a)
+			local Part = a[1] :: Part
+			local AncestorName = a[2] :: Part
+			return Part:FindFirstAncestorOfClass(AncestorName)
+		end,
+		["findfirstancestorwhichisa"] = function(a)
+			local Part = a[1] :: Part
+			local AncestorName = a[2] :: Part
+			return Part:FindFirstAncestorWhichIsA(AncestorName)
+		end,
+		["findfirstchild"] = function(a)
+			local Part = a[1] :: Part
+			local ChildName = a[2] :: Part
+			return Part:FindFirstChild(ChildName)
+		end,
+		["findfirstchildofclass"] = function(a)
+			local Part = a[1] :: Part
+			local ChildName = a[2] :: Part
+			return Part:FindFirstChildOfClass(ChildName)
+		end,
+		["findfirstchildwhichisa"] = function(a)
+			local Part = a[1] :: Part
+			local ChildName = a[2] :: Part
+			return Part:FindFirstChildWhichIsA(ChildName)
+		end,
+		["findfirstdescendant"] = function(a)
+			local Part = a[1] :: Part
+			local DescendantName = a[2] :: Part
+			return Part:FindFirstDescendant(DescendantName)
+		end,
+		--getactor
+		["getattribute"] = function(a)
+			local Part = a[1] :: Part
+			local Attribute = a[2] :: string
+			return Part:GetAttribute(Attribute)
+		end,
+		--getattributechangedsignal
+		--getattributes
+		--getchildren
+		--getdebugid
+		--getdescendants
+		["getfullname"] = function(a)
+			local Part = a[1] :: Part
+			return Part:GetFullName()
+		end,
+		--getstyled
+		--getstyledpropertychangedsignal
+		--gettags
+		["hastag"] = function(a)
+			local Part = a[1] :: Part
+			local TagName = a[2]
+			return Part:HasTag(TagName)
+		end,
+		["isancestorof"] = function(a)
+			local Part = a[1] :: Part
+			local Descendant = a[2]
+			return Part:IsAncestorOf(Descendant)
+		end,
+		["isdescendantof"] = function(a)
+			local Part = a[1] :: Part
+			local Ancestor = a[2]
+			return Part:IsDescendantOf(Ancestor)
+		end,
+		["ispropertymodified"] = function(a)
+			local Part = a[1] :: Part
+			local Property = a[2]
+			return Part:IsPropertyModified(Property)
+		end,
+		--querydescendants
+		["removetag"] = function(a)
+			local Part = a[1] :: Part
+			local TagName = a[2]
+			return Part:RemoveTag(TagName)
+		end,
+		["resetpropertytodefault"] = function(a)
+			local Part = a[1] :: Part
+			local Property = a[2]
+			return Part:ResetPropertyToDefault(Property)
+		end,
+		["setattribute"] = function(a)
+			local Part = a[1] :: Part
+			local AttributeName = a[2]
+			local AttributeValue = a[3]
+			return Part:SetAttribute(AttributeName, AttributeValue)
+		end,
+		["waitforchild"] = function(a)
+			local Part = a[1] :: Part
+			local ChildName = a[2]
+			local TimeOut = a[3]
+			return Part:WaitForChild(ChildName, TimeOut)
 		end,
 	}
 	
-	local mode = arguments[1]
-	local setvar = arguments[2]
-	if setvar ~= "null" then setvar = thread.Variables:FindFirstChild(setvar) end
-	print(setvar)
+	local func = modes[arguments[1]]
 	
-	if not mode then
-		warn(`{script.Name} failed to return value: function or var is not valid`)
-		return
-	end
-	
-	for i = 1, 2 do
+	if func then
 		table.remove(arguments, 1)
+		local returnval = func(arguments)
+		return returnval or nil
 	end
 	
-	local get = modes[mode](arguments)
-	if get == "NONE" then
-		get = setvar.Value
-	end
-	if setvar ~= "null" then setvar.Value = get end
+	return nil
 end
